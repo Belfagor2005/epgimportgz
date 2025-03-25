@@ -51,4 +51,5 @@ jobs:
 
       - name: Pusha le modifiche
         run: |
-          git push https://x-access-token:${{ secrets.GITHUB_TOKEN }}@github.com/Belfagor2005/epgimportgz.git HEAD:master
+          git push --force https://x-access-token:${{ secrets.GITHUB_TOKEN }}@github.com/Belfagor2005/epgimportgz.git main
+

@@ -1,7 +1,0 @@
-202503250532
-
-
--- epg_ripper_ALJAZEERA1 --
-
-AlJazeera.Arabic.net
-AlJazeera.English.net

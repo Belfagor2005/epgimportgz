@@ -21,12 +21,20 @@ jobs:
         run: |
           grep -oP 'href="\K[^"]+' file_list.html | grep -E "\.(txt|pdf|gz|zip|xml)$" > files_to_download.txt
 
-      - name: Scarica i file
+      - name: Scarica i file (solo sotto i 100MB)
         run: |
           mkdir -p downloaded_files
           cd downloaded_files
           while read file; do
-            wget -q "https://epgshare01.online/epgshare01/$file"
+            wget -q --show-progress --limit-rate=1M "https://epgshare01.online/epgshare01/$file"
+
+            # Controlla la dimensione del file
+            if [ $(stat -c %s "$file") -le 100000000 ]; then
+              echo "✅ File $file scaricato (OK)"
+            else
+              echo "⛔ File $file troppo grande, eliminato"
+              rm "$file"
+            fi
           done < ../files_to_download.txt
 
       - name: Configura Git
@@ -41,15 +49,6 @@ jobs:
           git add .
           git commit -m "Aggiunti file scaricati automaticamente" || echo "Nessuna modifica da committare"
 
-      - name: Abilita Git LFS
+      - name: Pusha le modifiche
         run: |
-          git lfs install
-          git lfs track "*.gz" "*.zip" "*.xml"
-          git add .gitattributes
-          git commit -m "Enable Git LFS" || echo "No changes to commit"
-      
-      - name: Pusha le modifiche con Git LFS
-        run: |
-          git lfs push --all origin
           git push https://x-access-token:${{ secrets.GITHUB_TOKEN }}@github.com/Belfagor2005/epgimportgz.git HEAD:master
-

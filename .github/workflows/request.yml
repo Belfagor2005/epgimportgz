@@ -1,0 +1,47 @@
+name: Download and Upload Files
+
+on:
+  schedule:
+    - cron: '0 0 * * *'  # Esegue ogni giorno a mezzanotte
+  workflow_dispatch:  # Permette di eseguire manualmente il workflow
+
+jobs:
+  download_and_commit:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout del repository
+        uses: actions/checkout@v2
+
+      - name: Scarica la lista dei file
+        run: |
+          wget -q -O file_list.html https://epgshare01.online/epgshare01/
+
+      - name: Estrai i link dei file
+        run: |
+          grep -oP 'href="\K[^"]+' file_list.html | grep -E "\.(txt|pdf|gz|zip|xml)$" > files_to_download.txt
+
+      - name: Scarica i file
+        run: |
+          mkdir -p downloaded_files
+          cd downloaded_files
+          while read file; do
+            wget -q "https://epgshare01.online/epgshare01/$file"
+          done < ../files_to_download.txt
+
+      - name: Configura Git
+        run: |
+          git config --global user.name 'github-actions'
+          git config --global user.email 'github-actions@github.com'
+
+      - name: Aggiungi e committa i file
+        run: |
+          mv downloaded_files/* .
+          rm -rf downloaded_files
+          git add .
+          git commit -m "Aggiunti file scaricati automaticamente" || echo "Nessuna modifica da committare"
+
+      - name: Pusha le modifiche
+        uses: ad-m/github-push-action@v0.6.0
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}

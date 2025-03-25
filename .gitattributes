@@ -1,0 +1,3 @@
+*.gz filter=lfs diff=lfs merge=lfs
+*.zip filter=lfs diff=lfs merge=lfs
+*.xml filter=lfs diff=lfs merge=lfs

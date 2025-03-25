@@ -41,6 +41,15 @@ jobs:
           git add .
           git commit -m "Aggiunti file scaricati automaticamente" || echo "Nessuna modifica da committare"
 
-      - name: Pusha le modifiche
+      - name: Abilita Git LFS
         run: |
+          git lfs install
+          git lfs track "*.gz" "*.zip" "*.xml"
+          git add .gitattributes
+          git commit -m "Enable Git LFS" || echo "No changes to commit"
+      
+      - name: Pusha le modifiche con Git LFS
+        run: |
+          git lfs push --all origin
           git push https://x-access-token:${{ secrets.GITHUB_TOKEN }}@github.com/Belfagor2005/epgimportgz.git HEAD:master
+

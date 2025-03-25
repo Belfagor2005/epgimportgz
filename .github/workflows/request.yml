@@ -19,7 +19,7 @@ jobs:
 
       - name: Estrai i link dei file
         run: |
-          grep -oP 'href="\K[^"]+' file_list.html | grep -E "\.(txt|pdf|gz|zip|xml)$" > files_to_download.txt
+          grep -oP 'href="\K[^"]+' file_list.html | grep -E "\.(gz|zip|xml)$" > files_to_download.txt
 
       - name: Scarica i file (solo sotto i 100MB)
         run: |

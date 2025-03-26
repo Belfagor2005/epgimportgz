@@ -26,7 +26,8 @@ jobs:
           mkdir -p downloaded_files
           cd downloaded_files
           while read file; do
-            wget -q --show-progress --limit-rate=1M "https://epgshare01.online/epgshare01/$file"
+            # wget -q --show-progress --limit-rate=1M "https://epgshare01.online/epgshare01/$file"
+            wget -c -nH -r -q -l0 -A "*.gz" -np -nd --wait=3 --execute="robots = off" --reject="*ALL*" https://epgshare01.online/epgshare01/
 
             # Controlla la dimensione del file
             if [ $(stat -c %s "$file") -le 100000000 ]; then

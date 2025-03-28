@@ -1,0 +1,31 @@
+name: Update EPG Files in Main
+
+on:
+  workflow_dispatch:
+
+jobs:
+  update_epg:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout main branch
+        uses: actions/checkout@v3
+        with:
+          ref: main  # Lavoriamo sulla branch main
+
+      - name: Pulisci SOLO i file EPG esistenti
+        run: |
+          # Rimuove solo i file .gz mantenendo tutto il resto
+          find . -maxdepth 1 -type f -name "*.gz" -exec rm -v {} \;
+          echo "Pulizia file EPG completata"
+
+      - name: Configura Git
+        run: |
+          git config --global user.name 'github-actions'
+          git config --global user.email 'github-actions@github.com'
+
+      - name: Commit e push su main
+        run: |
+          git add .
+          git commit -m "Auto-update EPG $(date +'%Y-%m-%d %H:%M')" || echo "Nessun cambiamento"
+          git push origin main

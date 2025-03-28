@@ -2,55 +2,59 @@ name: Download and Upload Files
 
 on:
   schedule:
-    - cron: '0 0 * * *'  # Esegue ogni giorno a mezzanotte
-  workflow_dispatch:  # Permette di eseguire manualmente il workflow
+    - cron: '0 0 * * *'  # Runs daily at midnight
+  workflow_dispatch:  # Allows manual triggering
 
 jobs:
   download_and_commit:
     runs-on: ubuntu-latest
 
     steps:
-      - name: Checkout del repository
+      - name: Checkout repository
         uses: actions/checkout@v2
 
-      - name: Scarica la lista dei file
+      - name: Get file list
         run: |
           wget -q -O file_list.html https://epgshare01.online/epgshare01/
+          grep -oP 'href="\K[^"]+' file_list.html | grep -E "\.(gz|zip|xml)$" | grep -v "ALL_SOURCES" > files_to_download.txt
 
-      - name: Estrai i link dei file
-        run: |
-          grep -oP 'href="\K[^"]+' file_list.html | grep -E "\.(gz|zip|xml)$" > files_to_download.txt
-
-      - name: Scarica i file (solo sotto i 100MB)
+      - name: Download files (under 100MB)
         run: |
           mkdir -p downloaded_files
           cd downloaded_files
+          
           while read file; do
-            # wget -q --show-progress --limit-rate=1M "https://epgshare01.online/epgshare01/$file"
-            wget -c -nH -r -q -l0 -A "*.gz" -np -nd --wait=3 --execute="robots = off" --reject="*ALL*" https://epgshare01.online/epgshare01/
-
-            # Controlla la dimensione del file
-            if [ $(stat -c %s "$file") -le 100000000 ]; then
-              echo "✅ File $file scaricato (OK)"
+            echo "Downloading $file..."
+            wget -q --show-progress --limit-rate=1M "https://epgshare01.online/epgshare01/$file" || continue
+            
+            # Check file size if download was successful
+            if [ -f "$file" ]; then
+              filesize=$(stat -c %s "$file")
+              if [ $filesize -le 100000000 ]; then
+                echo "✅ File $file downloaded ($filesize bytes)"
+              else
+                echo "⛔ File $file too large ($filesize bytes), deleting"
+                rm "$file"
+              fi
             else
-              echo "⛔ File $file troppo grande, eliminato"
-              rm "$file"
+              echo "⚠️ Failed to download $file"
             fi
           done < ../files_to_download.txt
 
-      - name: Configura Git
+      - name: Configure Git
         run: |
           git config --global user.name 'github-actions'
           git config --global user.email 'github-actions@github.com'
 
-      - name: Aggiungi e committa i file
+      - name: Commit changes
         run: |
-          mv downloaded_files/* .
-          rm -rf downloaded_files
-          git add .
-          git commit -m "Aggiunti file scaricati automaticamente" || echo "Nessuna modifica da committare"
-
-      - name: Pusha le modifiche
-        run: |
-          git push --force https://x-access-token:${{ secrets.GITHUB_TOKEN }}@github.com/Belfagor2005/epgimportgz.git main
-
+          # Only proceed if there are downloaded files
+          if [ -n "$(ls -A downloaded_files)" ]; then
+            mv downloaded_files/* .
+            rm -rf downloaded_files
+            git add .
+            git commit -m "Auto-update: Downloaded EPG files $(date +'%Y-%m-%d %H:%M')"
+            git push https://x-access-token:${{ secrets.GITHUB_TOKEN }}@github.com/Belfagor2005/epgimportgz.git main
+          else
+            echo "No files downloaded, skipping commit"
+          fi
